@@ -1,0 +1,156 @@
+:root {
+    --primary-color: #EF798A;
+    --secondary-color: #613F75;
+}
+
+.bg-primary-custom {
+    background-color: var(--primary-color) !important;
+}
+
+.text-primary-custom {
+    color: var(--primary-color) !important;
+}
+
+.text-secondary-custom {
+    color: var(--secondary-color) !important;
+}
+
+.nav-icon-link {
+    font-size: 1.4rem;
+    padding: 0.5rem 1rem !important;
+    border-radius: 0.6rem;
+    transition: all 0.2s ease;
+    color: #6c757d;
+}
+
+.nav-icon-link:hover, .nav-icon-link.active {
+    background-color: rgba(239, 121, 138, 0.15);
+    color: var(--primary-color) !important;
+}
+
+.badge-custom {
+    background-color: var(--primary-color);
+}
+
+.btn-icon-custom {
+    background-color: #f8f9fa;
+    color: var(--secondary-color);
+    transition: all 0.2s ease;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: none;
+}
+
+.btn-icon-custom:hover {
+    background-color: rgba(97, 63, 117, 0.1);
+    color: var(--secondary-color);
+}
+
+.profile-nav-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.profile-nav-img {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    object-fit: cover;
+}
+
+.dropdown-toggle::after {
+    display: none !important;
+}
+
+/* Top-aligned Dropdown Modal Customizations */
+.modal-dropdown .modal-dialog {
+    margin-top: 65px;
+    margin-right: 15px;
+    margin-left: auto;
+    max-width: 380px;
+}
+
+.modal-dropdown .modal-content {
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+/* Mobile Search Overlay */
+.mobile-search-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #ffffff;
+    z-index: 1040;
+    display: none;
+    align-items: center;
+    padding: 0 0.75rem;
+}
+
+.mobile-search-overlay.active {
+    display: flex !important;
+}
+
+/* Prevent dark overlay on modals */
+    .modal-backdrop {
+        display: none !important;
+    }
+
+    /* Position modals as top-right popover dropdowns */
+    .modal-dropdown .modal-dialog {
+        margin-top: 60px;
+        margin-right: 15px;
+        float: right;
+        max-width: 360px;
+        width: 100%;
+    }
+
+    @media (max-width: 576px) {
+        .modal-dropdown .modal-dialog {
+            margin: 60px auto 0 auto;
+            float: none;
+            max-width: 95%;
+        }
+        }
+
+@media (max-width: 991.98px) {
+    body {
+        padding-bottom: 60px;
+    }
+
+    .bottom-nav-mobile {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1030;
+        background-color: #ffffff;
+        border-top: 1px solid #dee2e6;
+        padding: 0.4rem 0;
+    }
+
+    .bottom-nav-mobile .nav-icon-link {
+        font-size: 1.3rem;
+        padding: 0.4rem 0.8rem !important;
+    }
+
+    .modal-dropdown .modal-dialog {
+        margin: 60px auto 0 auto;
+        width: 92%;
+    }
+}
+
+.navbar, .dropdown-menu {
+    overflow: visible !important;
+}

@@ -1,0 +1,57 @@
+.bg-primary {
+    background-color: #ef798a;
+}
+
+.bg-secondary {
+    background-color: #613f75;
+}
+
+.btn-primary {
+    background-color: #ef798a
+}
+
+.btn-secondary {
+    background-color: #613f75;
+}
+
+.btn-outline-primary {
+    outline: #ef798a;
+}
+
+.btn-outline-secondary {
+    outline: #613f75;
+}
+
+
+body {
+    background-color: #f8f9fa;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    border: none;
+    border-radius: 1rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+}
+
+.brand-logo {
+    max-height: 80px;
+    width: auto;
+    object-fit: contain;
+}
+
+.toast-container-top {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1090;
+}
+
+.toast-success-custom {
+    background-color: #f8f9fa;
+    border-left: 5px solid #613f75;
+    border-radius: 8px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
