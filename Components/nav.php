@@ -1,48 +1,9 @@
 <?php
-    include_once "../Context/getuserdata.php";
+    include_once __DIR__ . '/../Context/getuserdata.php';
+    $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap 5 CSS -->
-    <link rel="stylesheet" href="../Assets/bootstrap-5.3.3-dist/bootstrap-5.3.3-dist/css/bootstrap.css">
-    <link rel="stylesheet" href="../Styles/nav.css">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../Styles/style.css">
-
-    <title>Navigation</title>
-</head>
-<body class="bg-light">
-
-   <?php
-    include "../Context/getuserdata.php";
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap 5 CSS -->
-    <link rel="stylesheet" href="../Assets/bootstrap-5.3.3-dist/bootstrap-5.3.3-dist/css/bootstrap.css">
-    <link rel="stylesheet" href="../Styles/nav.css">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../Styles/style.css">
-
-    <title>Navigation</title>
-</head>
-<body class="bg-light">
-    <?php
-        // Get the current page filename (e.g., 'dashboard.php', 'explore.php')
-        $current_page = basename($_SERVER['PHP_SELF']);
-    ?>
+    <!-- TOP NAVBAR -->
 
     <!-- TOP NAVBAR -->
     <nav class="navbar bg-white border-bottom fixed-top py-2 w-100" style="z-index: 1040; top: 0; left: 0;">
@@ -54,7 +15,7 @@
                     <span class="input-group-text bg-light border-end-0 text-secondary-custom">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input class="form-control bg-light border-start-0 ps-0" type="search" name="query" id="mobileSearchInput" placeholder="Search I-Post..." required>
+                    <input class="form-control bg-light border-start-0 ps-0" type="search" name="q" id="mobileSearchInput" placeholder="Search I-Post..." required>
                 </div>
                 <button type="button" class="btn btn-icon-custom" id="closeMobileSearch" title="Close Search">
                     <i class="bi bi-x-lg fs-5"></i>
@@ -74,7 +35,7 @@
                         <span class="input-group-text bg-light border-end-0 text-secondary-custom">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input class="form-control bg-light border-start-0 ps-0" type="search" name="query" placeholder="Search I-Post..." required>
+                        <input class="form-control bg-light border-start-0 ps-0" type="search" name="q" placeholder="Search I-Post..." required>
                     </div>
                 </form>
             </div>
@@ -117,34 +78,35 @@
                 <span class="mx-2 mx-md-4"></span>
                 
                 <!-- Messages Trigger -->
-                <button class="btn btn-icon-custom position-relative" data-bs-toggle="modal" data-bs-target="#chatsModal" title="Messages">
+                <a class="btn btn-icon-custom position-relative" href="chats.php" title="Messages">
                     <i class="bi bi-chat-dots-fill fs-5"></i>
                     <?php if (isset($unread_chat_count) && $unread_chat_count > 0): ?>
                         <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
                     <?php endif; ?>
-                </button>
+                </a>
 
                 <!-- Notifications Trigger -->
-                <button class="btn btn-icon-custom position-relative" data-bs-toggle="modal" data-bs-target="#notificationsModal" title="Notifications">
+                <a class="btn btn-icon-custom position-relative" href="notifications.php" title="Notifications">
                     <i class="bi bi-bell-fill fs-5"></i>
                     <?php if (isset($unread_notif_count) && $unread_notif_count > 0): ?>
                         <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
                     <?php endif; ?>
-                </button>
+                </a>
 
                 <!-- USER PROFILE DROPDOWN -->
                 <div class="dropdown me-2 me-md-3 position-relative">
-                    <button class="profile-nav-btn border-0 bg-transparent p-0 d-flex align-items-center cursor-pointer" 
-                            type="button" 
+                    <a class="profile-nav-btn border-0 bg-transparent p-0 d-flex align-items-center cursor-pointer" 
+                            href="profile.php" 
                             id="profileDropdownBtn" 
                             data-bs-toggle="dropdown" 
-                            aria-expanded="false">
+                            aria-expanded="false"
+                            role="button">
                         <img src="<?php echo getAvatar($user_data['profile_picture'] ?? ''); ?>" 
                             alt="Profile" 
                             class="rounded-circle border profile-nav-img" 
                             style="width: 38px; height: 38px; object-fit: cover;"
                             onerror="this.onerror=null; this.src='../img/default_profile.png';">
-                    </button>
+                    </a>
                     
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" 
                         id="profileDropdownMenu" 
@@ -224,7 +186,7 @@
                     <div class="list-group list-group-flush">
                         <?php if (isset($recent_chats) && mysqli_num_rows($recent_chats) > 0): ?>
                             <?php while ($chat = mysqli_fetch_assoc($recent_chats)): ?>
-                                <a href="chat_detail.php?id=<?php echo $chat['sender_id']; ?>" class="list-group-item list-group-item-action p-3 d-flex align-items-center gap-3 <?php echo $chat['is_read'] ? '' : 'bg-light'; ?>">
+                                <a href="chat_detail.php?id=<?php echo (int)$chat['sender_id']; ?>" class="list-group-item list-group-item-action p-3 d-flex align-items-center gap-3 <?php echo $chat['is_read'] ? '' : 'bg-light'; ?>">
                                     <img src="<?php echo getAvatar($chat['profile_picture']); ?>" alt="Avatar" class="rounded-circle border" style="width: 42px; height: 42px; object-fit: cover;">
                                     <div class="flex-grow-1 overflow-hidden">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -261,7 +223,7 @@
                     <div class="list-group list-group-flush">
                         <?php if (isset($notifications) && mysqli_num_rows($notifications) > 0): ?>
                             <?php while ($notif = mysqli_fetch_assoc($notifications)): ?>
-                                <a href="notifications.php" class="list-group-item list-group-item-action p-3 d-flex align-items-center gap-3 <?php echo $notif['is_read'] ? '' : 'bg-light'; ?>">
+                                <a href="../Context/mark_notification_read.php?id=<?php echo (int)($notif['id'] ?? 0); ?>&redirect=profile.php?id=<?php echo (int)($notif['actor_id'] ?? 0); ?>" class="list-group-item list-group-item-action p-3 d-flex align-items-center gap-3 <?php echo $notif['is_read'] ? '' : 'bg-light'; ?> text-decoration-none text-dark">
                                     <img src="<?php echo getAvatar($notif['profile_picture']); ?>" alt="Avatar" class="rounded-circle border" style="width: 40px; height: 40px; object-fit: cover;">
                                     <div class="flex-grow-1">
                                         <p class="mb-1 fs-8">
@@ -339,6 +301,3 @@
         }
     });
     </script>
-
-</body>
-</html>

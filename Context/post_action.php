@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once '../config.php';
+require_once __DIR__ . '/../config.php';
 
 if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: ../Pages/dashboard.php");
@@ -13,6 +13,16 @@ if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
 $user_id = $_SESSION['user_id'];
 $post_id = intval($_POST['post_id'] ?? 0);
 $action = $_POST['action'] ?? '';
+
+$redirect_to = $_POST['redirect_to'] ?? $_SERVER['HTTP_REFERER'] ?? '../Pages/dashboard.php';
+if (filter_var($redirect_to, FILTER_VALIDATE_URL) !== false) {
+    $parsed = parse_url($redirect_to);
+    $redirect_to = $parsed['path'] ?? '../Pages/dashboard.php';
+}
+$redirect_to = trim($redirect_to);
+if ($redirect_to === '' || !str_starts_with($redirect_to, '/') && !str_starts_with($redirect_to, '../') && !str_starts_with($redirect_to, './') && !preg_match('#^(Pages|Components|Context)/#', $redirect_to)) {
+    $redirect_to = '../Pages/dashboard.php';
+}
 
 if ($post_id > 0) {
     if ($action === 'delete') {
@@ -48,5 +58,5 @@ if ($post_id > 0) {
     }
 }
 
-header("Location: ../Pages/dashboard.php");
+header("Location: " . $redirect_to);
 exit();

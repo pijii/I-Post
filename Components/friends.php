@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Ensure database connection exists
 if (!isset($conn)) {
-    require_once "../Context/config.php";
+    require_once __DIR__ . '/../config.php';
 }
 
 $current_user_id = $_SESSION['user_id'] ?? null;
@@ -38,13 +38,8 @@ $friends_result = $stmt->get_result();
         <?php if ($friends_result && $friends_result->num_rows > 0): ?>
             <div class="d-flex flex-column gap-2">
                 <?php while ($friend = $friends_result->fetch_assoc()): ?>
-                    <?php 
-                        $avatar = !empty($friend['profile_picture']) ? $friend['profile_picture'] : '../img/default_profile.png';
-                        
-                        // Sanitize image path
-                        if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, '../') && !str_starts_with($avatar, './')) {
-                            $avatar = '../' . $avatar;
-                        }
+                    <?php
+                        $avatar = resolveUserImagePath($friend['profile_picture'] ?? '', '../img/default_profile.png');
                     ?>
                     <a href="profile.php?id=<?php echo $friend['friend_id']; ?>" class="d-flex align-items-center text-decoration-none p-1 rounded-2 hover-bg-light">
                         <img src="<?php echo htmlspecialchars($avatar); ?>" 

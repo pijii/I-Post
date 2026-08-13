@@ -4,11 +4,11 @@
     }
 
     // Include database configuration
-    require_once '../Config.php'; 
+    require_once __DIR__ . '/../config.php'; 
 
     // Redirect if user is not logged in
     if (!isset($_SESSION['user_id'])) {
-        header("Location: login.php");
+        header("Location: ../Pages/login.php");
         exit;
     }
 
@@ -28,23 +28,22 @@
     // Helper function to verify image existence and fallback correctly
     if (!function_exists('getAvatar')) {
         function getAvatar($img) {
-            if (!empty($img) && file_exists("../img/uploads/" . $img)) {
-                return "../img/uploads/" . $img;
-            }
-            return "../img/default_profile.png";
+            return resolveUserImagePath($img, '../img/default_profile.png');
         }
     }
 
-    // 2. Fetch Unread Chats/Messages
+    // 2. Fetch Recent Chats/Messages for inbox preview
     $stmtChats = mysqli_prepare($conn, "
-        SELECT c.*, u.fullname, u.username, u.profile_picture 
+        SELECT c.*, 
+               IF(c.sender_id = ?, c.receiver_id, c.sender_id) AS contact_id, 
+               u.fullname, u.username, u.profile_picture 
         FROM chats c 
-        JOIN users u ON c.sender_id = u.id 
-        WHERE c.receiver_id = ? 
+        JOIN users u ON u.id = IF(c.sender_id = ?, c.receiver_id, c.sender_id) 
+        WHERE c.sender_id = ? OR c.receiver_id = ? 
         ORDER BY c.created_at DESC 
         LIMIT 5
     ");
-    mysqli_stmt_bind_param($stmtChats, "i", $current_user_id);
+    mysqli_stmt_bind_param($stmtChats, "iiii", $current_user_id, $current_user_id, $current_user_id, $current_user_id);
     mysqli_stmt_execute($stmtChats);
     $recent_chats = mysqli_stmt_get_result($stmtChats);
 

@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once '../config.php';
+require_once __DIR__ . '/../config.php';
 
 if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: ../Pages/dashboard.php");
@@ -12,6 +12,16 @@ if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $user_id = $_SESSION['user_id'];
 $post_id = intval($_POST['post_id'] ?? 0);
+
+$redirect_to = $_POST['redirect_to'] ?? $_SERVER['HTTP_REFERER'] ?? '../Pages/dashboard.php';
+if (filter_var($redirect_to, FILTER_VALIDATE_URL) !== false) {
+    $parsed = parse_url($redirect_to);
+    $redirect_to = $parsed['path'] ?? '../Pages/dashboard.php';
+}
+$redirect_to = trim($redirect_to);
+if ($redirect_to === '' || (!str_starts_with($redirect_to, '/') && !str_starts_with($redirect_to, '../') && !str_starts_with($redirect_to, './') && !preg_match('#^(Pages|Components|Context)/#', $redirect_to))) {
+    $redirect_to = '../Pages/dashboard.php';
+}
 
 if ($post_id > 0) {
     // Check if the user already liked the post
@@ -32,9 +42,23 @@ if ($post_id > 0) {
         $insert_stmt->bind_param("ii", $post_id, $user_id);
         $insert_stmt->execute();
         $insert_stmt->close();
+
+        $post_owner_stmt = $conn->prepare("SELECT user_id FROM posts WHERE id = ? LIMIT 1");
+        $post_owner_stmt->bind_param("i", $post_id);
+        $post_owner_stmt->execute();
+        $post_owner_result = $post_owner_stmt->get_result();
+
+        if ($post_owner_result && $post_owner_result->num_rows > 0) {
+            $post_owner = $post_owner_result->fetch_assoc();
+            $owner_id = (int)($post_owner['user_id'] ?? 0);
+            if ($owner_id > 0 && $owner_id !== $user_id) {
+                createNotification($conn, $owner_id, $user_id, 'like', $post_id, null);
+            }
+        }
+        $post_owner_stmt->close();
     }
     $check_stmt->close();
 }
 
-header("Location: ../Pages/dashboard.php");
+header("Location: " . $redirect_to);
 exit();

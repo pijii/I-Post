@@ -12,16 +12,12 @@ if (!isset($_SESSION['user_id'])) {
 require_once "../config.php";
 
 $user_id = $_SESSION['user_id'];
-$profile_picture = $_SESSION['profile_picture'] ?? '../img/default_profile.png';
+$profile_picture = resolveUserImagePath($_SESSION['profile_picture'] ?? '', '../img/default_profile.png');
 
 // Helper function for user avatars
 if (!function_exists('getAvatar')) {
     function getAvatar($path) {
-        if (empty($path)) return '../img/default_profile.png';
-        if (str_starts_with($path, 'http') || str_starts_with($path, '../') || str_starts_with($path, './')) {
-            return $path;
-        }
-        return '../' . $path;
+        return resolveUserImagePath($path, '../img/default_profile.png');
     }
 }
 
@@ -182,6 +178,7 @@ $saved_posts = $bm_stmt->get_result();
                                         <div class="col">
                                             <form action="../Context/like.php" method="POST" class="w-100">
                                                 <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
+                                                <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'bookmarks.php'); ?>">
                                                 <button type="submit" class="btn btn-light w-100 py-2 border-0 text-secondary fw-semibold fs-7 rounded-3 d-flex align-items-center justify-content-center gap-2">
                                                     <i class="bi <?php echo $post['is_liked'] ? 'bi-heart-fill text-danger' : 'bi-heart-fill text-danger'; ?>"></i>
                                                     <span><?php echo $post['likes_count']; ?> Like<?php echo $post['likes_count'] == 1 ? '' : 's'; ?></span>

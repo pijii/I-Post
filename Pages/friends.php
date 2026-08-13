@@ -12,16 +12,12 @@ if (!isset($_SESSION['user_id'])) {
 require_once "../config.php";
 
 $user_id = $_SESSION['user_id'];
-$profile_picture = $_SESSION['profile_picture'] ?? '../img/default_profile.png';
+$profile_picture = resolveUserImagePath($_SESSION['profile_picture'] ?? '', '../img/default_profile.png');
 
 // Helper function for user avatars
 if (!function_exists('getAvatar')) {
     function getAvatar($path) {
-        if (empty($path)) return '../img/default_profile.png';
-        if (str_starts_with($path, 'http') || str_starts_with($path, '../') || str_starts_with($path, './')) {
-            return $path;
-        }
-        return '../' . $path;
+        return resolveUserImagePath($path, '../img/default_profile.png');
     }
 }
 

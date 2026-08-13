@@ -38,7 +38,12 @@ $requests_result = $stmt->get_result();
             <div class="d-flex flex-column gap-3">
                 <?php while ($request = $requests_result->fetch_assoc()): ?>
                     <?php 
-                        $avatar = resolveUserImagePath($request['profile_picture'] ?? '', '../img/default_profile.png');
+                        $avatar = !empty($request['profile_picture']) ? $request['profile_picture'] : '../img/default_profile.png';
+                        
+                        // Sanitize path if it's a relative local path
+                        if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, '../') && !str_starts_with($avatar, './')) {
+                            $avatar = '../' . $avatar;
+                        }
                     ?>
                     <div class="d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center me-2">
@@ -54,9 +59,9 @@ $requests_result = $stmt->get_result();
                             </div>
                         </div>
                         <div class="d-flex gap-1">
-                            <form action="../Context/confirm_friend.php" method="POST" class="d-inline">
-                                <input type="hidden" name="request_id" value="<?php echo (int)$request['request_id']; ?>">
-                                <input type="hidden" name="target_user_id" value="<?php echo (int)$request['user_id']; ?>">
+                            <form action="../Context/friend_action.php" method="POST" class="d-inline">
+                                <input type="hidden" name="request_id" value="<?php echo $request['request_id']; ?>">
+                                <input type="hidden" name="target_user_id" value="<?php echo $request['user_id']; ?>">
                                 <button type="submit" name="action" value="accept_request" class="btn btn-primary btn-sm rounded-pill px-2 py-1">Confirm</button>
                                 <button type="submit" name="action" value="decline_request" class="btn btn-light btn-sm rounded-pill px-2 py-1 text-secondary">Delete</button>
                             </form>

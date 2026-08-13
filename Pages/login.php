@@ -1,3 +1,14 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$login_error_message = '';
+if (isset($_SESSION['error'])) {
+    $login_error_message = $_SESSION['error'];
+    unset($_SESSION['error']);
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +17,7 @@
 
     <link rel="stylesheet" href="../Assets/bootstrap-5.3.3-dist/bootstrap-5.3.3-dist/css/bootstrap.css">
     <link rel="stylesheet" href="../Styles/style.css">
+    <link rel="stylesheet" href="../Styles/site.css">
 
     <link rel="icon" type="image/png" href="../img/iPost_logo.png">
     <title>I-Post Login</title>
@@ -24,18 +36,6 @@
                             <h3 class="fw-bold mb-1">Welcome Back</h3>
                             <p class="text-muted fs-7">Please sign in to continue</p>
                         </div>
-
-                        <!-- PHP Alert for Incorrect Credentials -->
-                        <?php if (isset($_SESSION['error'])): ?>
-                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                <?php 
-                                    echo htmlspecialchars($_SESSION['error']); 
-                                    unset($_SESSION['error']);
-                                ?>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        <?php endif; ?>
 
                         <!-- Login Form -->
                         <form id="loginForm" class="needs-validation" action="../Context/authenticate.php" method="POST" novalidate>
@@ -88,35 +88,32 @@
         </div>
     </div>
 
+    <div class="modal fade" id="loginErrorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger">Login Error</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-2">
+                    <p class="mb-0 text-muted"><?php echo htmlspecialchars($login_error_message ?: 'Incorrect username or password.'); ?></p>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../Assets/bootstrap-5.3.3-dist/bootstrap-5.3.3-dist/js/bootstrap.bundle.js"></script>
-
+    <script src="../Scripts/auth.js"></script>
     <script>
-        // Form Validation Script
-        (() => {
-            'use strict';
-            const form = document.getElementById('loginForm');
-            form.addEventListener('submit', event => {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        })();
-
-        // Password Toggle Visibility Script
-        const togglePasswordBtn = document.getElementById('togglePassword');
-        const passwordInput = document.getElementById('password');
-        const toggleIcon = document.getElementById('toggleIcon');
-
-        if (togglePasswordBtn && passwordInput && toggleIcon) {
-            togglePasswordBtn.addEventListener('click', () => {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                toggleIcon.classList.toggle('bi-eye');
-                toggleIcon.classList.toggle('bi-eye-slash');
-            });
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            <?php if (!empty($login_error_message)): ?>
+                const loginErrorModal = new bootstrap.Modal(document.getElementById('loginErrorModal'));
+                loginErrorModal.show();
+            <?php endif; ?>
+        });
     </script>
 </body>
 </html>

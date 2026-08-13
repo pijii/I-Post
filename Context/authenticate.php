@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-include "../config.php";
+require_once __DIR__ . '/../config.php';
 
 // Check if request was submitted via POST
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
@@ -37,6 +37,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['user_id']  = $row['id'];
                 $_SESSION['fullname'] = $row['fullname'];
                 $_SESSION['username'] = $row['username'];
+                $_SESSION['profile_picture'] = $row['profile_picture'] ?? '';
 
                 mysqli_stmt_close($stmt);
                 mysqli_close($conn);

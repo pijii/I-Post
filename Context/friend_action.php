@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Ensure database connection exists
-require_once "../config.php";
+require_once __DIR__ . '/../config.php';
 
 // Redirect if user is not logged in
 if (!isset($_SESSION['user_id'])) {
@@ -41,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $insert_stmt->bind_param("ii", $current_user_id, $target_user_id);
                     $insert_stmt->execute();
                     $insert_stmt->close();
+
+                    createNotification($conn, $target_user_id, $current_user_id, 'friend_request', null, null);
                 }
                 $stmt->close();
             }
@@ -49,24 +51,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'accept_request':
             if ($request_id > 0) {
                 // Accept request using request_id
-                $sql = "UPDATE friends SET status = 'accepted' WHERE id = ? AND friend_user_id = ?";
+                $sql = "SELECT user_id FROM friends WHERE id = ? AND friend_user_id = ? LIMIT 1";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param("ii", $request_id, $current_user_id);
                 $stmt->execute();
+                $request_row = $stmt->get_result()->fetch_assoc();
                 $stmt->close();
+
+                if ($request_row) {
+                    $sender_id = (int)($request_row['user_id'] ?? 0);
+                    $update_sql = "UPDATE friends SET status = 'accepted' WHERE id = ? AND friend_user_id = ?";
+                    $update_stmt = $conn->prepare($update_sql);
+                    $update_stmt->bind_param("ii", $request_id, $current_user_id);
+                    $update_stmt->execute();
+                    $update_stmt->close();
+
+                    if ($sender_id > 0 && $sender_id !== $current_user_id) {
+                        createNotification($conn, $sender_id, $current_user_id, 'friend_accept', null, null);
+                    }
+                }
             } elseif ($target_user_id > 0) {
                 // Accept request using target_user_id
-                $sql = "UPDATE friends SET status = 'accepted' WHERE user_id = ? AND friend_user_id = ?";
+                $sql = "SELECT user_id FROM friends WHERE user_id = ? AND friend_user_id = ? LIMIT 1";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param("ii", $target_user_id, $current_user_id);
                 $stmt->execute();
+                $request_row = $stmt->get_result()->fetch_assoc();
                 $stmt->close();
+
+                if ($request_row) {
+                    $sender_id = (int)($request_row['user_id'] ?? 0);
+                    $update_sql = "UPDATE friends SET status = 'accepted' WHERE user_id = ? AND friend_user_id = ?";
+                    $update_stmt = $conn->prepare($update_sql);
+                    $update_stmt->bind_param("ii", $target_user_id, $current_user_id);
+                    $update_stmt->execute();
+                    $update_stmt->close();
+
+                    if ($sender_id > 0 && $sender_id !== $current_user_id) {
+                        createNotification($conn, $sender_id, $current_user_id, 'friend_accept', null, null);
+                    }
+                }
             }
             break;
 
         case 'decline_request':
         case 'cancel_request':
         case 'remove_friend':
+        case 'unfriend':
             if ($request_id > 0) {
                 // Delete request/friendship by request_id
                 $sql = "DELETE FROM friends WHERE id = ? AND (user_id = ? OR friend_user_id = ?)";

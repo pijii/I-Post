@@ -9,8 +9,10 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+require_once "../config.php";
+
 $user_id = $_SESSION['user_id'];
-$profile_picture = $_SESSION['profile_picture'] ?? '../img/default_profile.png';
+$profile_picture = resolveUserImagePath($_SESSION['profile_picture'] ?? '', '../img/default_profile.png');
 ?>
 <!DOCTYPE html>
 <html lang="en">

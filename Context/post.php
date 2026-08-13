@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once '../config.php';
+require_once __DIR__ . '/../config.php';
 
 // Ensure user is authenticated and form was submitted via POST
 if (!isset($_SESSION['user_id']) || !isset($_POST['submit_post'])) {
@@ -25,7 +25,7 @@ if (isset($_FILES['post_img']) && $_FILES['post_img']['error'] === UPLOAD_ERR_OK
 
     if (in_array($fileExtension, $allowedExtensions)) {
         $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
-        $uploadFileDir = '../img/uploads/';
+        $uploadFileDir = '../uploads/';
 
         // Ensure destination directory exists
         if (!is_dir($uploadFileDir)) {
@@ -36,7 +36,7 @@ if (isset($_FILES['post_img']) && $_FILES['post_img']['error'] === UPLOAD_ERR_OK
 
         if (move_uploaded_file($fileTmpPath, $dest_path)) {
             // Save relative path for database storage
-            $post_img = 'img/uploads/' . $newFileName;
+            $post_img = 'uploads/' . $newFileName;
         }
     }
 }

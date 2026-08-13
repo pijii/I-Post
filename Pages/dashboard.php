@@ -9,8 +9,10 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
+require_once "../config.php";
+
 $user_id = $_SESSION['user_id'];
-$profile_picture = $_SESSION['profile_picture'] ?? '../img/default_profile.png';
+$profile_picture = resolveUserImagePath($_SESSION['profile_picture'] ?? '', '../img/default_profile.png');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,12 +53,14 @@ $profile_picture = $_SESSION['profile_picture'] ?? '../img/default_profile.png';
                 <div class="card shadow-sm border-0 mb-4 rounded-3">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center gap-2">
-                            <img src="<?php echo htmlspecialchars($profile_picture); ?>" 
-                                 alt="Profile" 
-                                 class="rounded-circle me-1 object-fit-cover" 
-                                 width="40" 
-                                 height="40"
-                                 onerror="this.onerror=null; this.src='../img/default_profile.png';">
+                            <a href="profile.php" class="d-inline-flex align-items-center text-decoration-none">
+                                <img src="<?php echo htmlspecialchars($profile_picture); ?>" 
+                                     alt="Profile" 
+                                     class="rounded-circle me-1 object-fit-cover" 
+                                     width="40" 
+                                     height="40"
+                                     onerror="this.onerror=null; this.src='../img/default_profile.png';">
+                            </a>
 
                             <input type="text" class="form-control rounded-pill bg-light border-0" placeholder="What's on your mind?" readonly data-bs-toggle="modal" data-bs-target="#uploadImageModal" style="cursor: pointer;">
                             

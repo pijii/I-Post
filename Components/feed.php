@@ -3,11 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once '../config.php';
+require_once __DIR__ . '/../config.php';
 
 $current_user_id = $_SESSION['user_id'] ?? null;
 
-// Query posts with author details, likes, comments count, like state, and bookmark (save) state
+// Query posts with author details, likes, comments count, like state, and bookmark state.
+// Show the current user's posts plus posts from accepted friends.
 $query = "
     SELECT 
         p.id AS post_id,
@@ -24,11 +25,20 @@ $query = "
         (SELECT COUNT(*) FROM bookmarks WHERE post_id = p.id AND user_id = ?) AS is_saved
     FROM posts p
     JOIN users u ON p.user_id = u.id
+    WHERE p.user_id = ?
+       OR p.user_id IN (
+            SELECT CASE
+                WHEN f.user_id = ? THEN f.friend_user_id
+                ELSE f.user_id
+            END
+            FROM friends f
+            WHERE (f.user_id = ? OR f.friend_user_id = ?) AND f.status = 'accepted'
+       )
     ORDER BY p.created_at DESC
 ";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param("ii", $current_user_id, $current_user_id);
+$stmt->bind_param("iiiiii", $current_user_id, $current_user_id, $current_user_id, $current_user_id, $current_user_id, $current_user_id);
 $stmt->execute();
 $posts_result = $stmt->get_result();
 ?>
@@ -37,17 +47,14 @@ $posts_result = $stmt->get_result();
     <?php if ($posts_result && $posts_result->num_rows > 0): ?>
         <?php while ($post = $posts_result->fetch_assoc()): ?>
             <?php 
-                $profile_pic = !empty($post['profile_picture']) ? $post['profile_picture'] : 'img/default_profile.png';
-                if (!str_starts_with($profile_pic, 'http') && !str_starts_with($profile_pic, '../')) {
-                    $profile_pic = '../' . $profile_pic;
-                }
+                $profile_pic = resolveUserImagePath($post['profile_picture'] ?? '', '../img/default_profile.png');
             ?>
-            <div class="card shadow-sm border-0 mb-3 rounded-3" style="overflow: visible;">
+            <div class="post-card card shadow-sm border-0 mb-3 rounded-3" data-post-id="<?php echo (int)$post['post_id']; ?>" style="overflow: visible; cursor: pointer;">
                 <div class="card-body p-3">
                     
                     <!-- Header with User Info and Action Dropdown -->
                     <div class="d-flex align-items-center justify-content-between mb-3 position-relative">
-                        <div class="d-flex align-items-center">
+                        <a href="profile.php?id=<?php echo (int)$post['user_id']; ?>" class="d-flex align-items-center text-decoration-none flex-grow-1 me-2">
                             <img src="<?php echo htmlspecialchars($profile_pic); ?>" 
                                  alt="Profile" 
                                  class="rounded-circle me-2 object-fit-cover" 
@@ -58,7 +65,7 @@ $posts_result = $stmt->get_result();
                                 <h6 class="mb-0 fw-bold text-dark"><?php echo htmlspecialchars($post['fullname']); ?></h6>
                                 <small class="text-muted">@<?php echo htmlspecialchars($post['username']); ?> • <?php echo date('M d, Y h:i A', strtotime($post['created_at'])); ?></small>
                             </div>
-                        </div>
+                        </a>
 
                         <!-- Dropdown options (Owner Options) -->
                         <?php if ($current_user_id && $current_user_id == $post['user_id']): ?>
@@ -113,6 +120,7 @@ $posts_result = $stmt->get_result();
                         <!-- Like Button -->
                         <form action="../Context/like.php" method="POST" class="flex-fill px-1">
                             <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
+                            <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'dashboard.php'); ?>">
                             <button type="submit" class="btn btn-light btn-sm w-100 border-0 text-secondary fw-semibold d-flex align-items-center justify-content-center gap-2">
                                 <i class="bi <?php echo $post['is_liked'] ? 'bi-heart-fill text-danger' : 'bi-heart'; ?>"></i>
                                 <span><?php echo $post['likes_count']; ?> Like<?php echo $post['likes_count'] == 1 ? '' : 's'; ?></span>
@@ -149,6 +157,7 @@ $posts_result = $stmt->get_result();
                             <form action="../Context/comment.php" method="POST" class="d-flex gap-2 mb-3">
                                 <input type="hidden" name="action" value="add">
                                 <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
+                                <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'dashboard.php'); ?>">
                                 <input type="text" name="comment_txt" class="form-control form-control-sm rounded-pill bg-light" placeholder="Write a comment..." required>
                                 <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Post</button>
                             </form>
@@ -156,13 +165,15 @@ $posts_result = $stmt->get_result();
                             <!-- Fetch Comments -->
                             <?php
                                 $c_stmt = $conn->prepare("
-                                    SELECT c.id AS comment_id, c.user_id, c.comment_txt, c.created_at, u.fullname, u.profile_picture 
+                                    SELECT c.id AS comment_id, c.user_id, c.comment_txt, c.created_at, u.fullname, u.profile_picture,
+                                           (SELECT COUNT(*) FROM comment_likes WHERE comment_id = c.id) AS comment_likes_count,
+                                           (SELECT COUNT(*) FROM comment_likes WHERE comment_id = c.id AND user_id = ?) AS is_comment_liked
                                     FROM comments c 
                                     JOIN users u ON c.user_id = u.id 
                                     WHERE c.post_id = ? 
                                     ORDER BY c.created_at ASC
                                 ");
-                                $c_stmt->bind_param("i", $post['post_id']);
+                                $c_stmt->bind_param("ii", $current_user_id, $post['post_id']);
                                 $c_stmt->execute();
                                 $comments_res = $c_stmt->get_result();
                             ?>
@@ -171,22 +182,29 @@ $posts_result = $stmt->get_result();
                                 <div class="d-flex flex-column gap-2">
                                     <?php while ($comment = $comments_res->fetch_assoc()): ?>
                                         <?php 
-                                            $c_avatar = !empty($comment['profile_picture']) ? $comment['profile_picture'] : 'img/default_profile.png';
-                                            if (!str_starts_with($c_avatar, 'http') && !str_starts_with($c_avatar, '../')) {
-                                                $c_avatar = '../' . $c_avatar;
-                                            }
+                                            $c_avatar = resolveUserImagePath($comment['profile_picture'] ?? '', '../img/default_profile.png');
                                         ?>
                                         <div class="d-flex align-items-start justify-content-between bg-light p-2 rounded-3">
-                                            <div class="d-flex align-items-start gap-2">
+                                            <div class="d-flex align-items-start gap-2 flex-grow-1">
                                                 <img src="<?php echo htmlspecialchars($c_avatar); ?>" 
                                                      class="rounded-circle object-fit-cover" 
                                                      width="30" 
                                                      height="30" 
                                                      alt="User"
                                                      onerror="this.onerror=null; this.src='../img/default_profile.png';">
-                                                <div class="lh-sm">
+                                                <div class="lh-sm flex-grow-1">
                                                     <span class="fw-bold d-block small"><?php echo htmlspecialchars($comment['fullname']); ?></span>
-                                                    <small class="text-dark"><?php echo htmlspecialchars($comment['comment_txt']); ?></small>
+                                                    <small class="text-dark d-block"><?php echo htmlspecialchars($comment['comment_txt']); ?></small>
+                                                    <div class="mt-2 d-flex align-items-center gap-2">
+                                                        <form action="../Context/comment_like.php" method="POST" class="d-inline">
+                                                            <input type="hidden" name="comment_id" value="<?php echo (int)$comment['comment_id']; ?>">
+                                                            <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'dashboard.php'); ?>">
+                                                            <button type="submit" class="btn btn-link btn-sm p-0 text-secondary text-decoration-none d-inline-flex align-items-center gap-1">
+                                                                <i class="bi <?php echo !empty($comment['is_comment_liked']) ? 'bi-heart-fill text-danger' : 'bi-heart'; ?>"></i>
+                                                                <span><?php echo (int)$comment['comment_likes_count']; ?></span>
+                                                            </button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -229,6 +247,7 @@ $posts_result = $stmt->get_result();
                                                                 <div class="modal-body">
                                                                     <input type="hidden" name="action" value="update">
                                                                     <input type="hidden" name="comment_id" value="<?php echo $comment['comment_id']; ?>">
+                                                                    <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'dashboard.php'); ?>">
                                                                     <input type="text" name="comment_txt" class="form-control form-control-sm bg-light" value="<?php echo htmlspecialchars($comment['comment_txt']); ?>" required>
                                                                 </div>
                                                                 <div class="modal-footer border-0 pt-0">
@@ -255,6 +274,7 @@ $posts_result = $stmt->get_result();
                                                                 <form action="../Context/comment.php" method="POST">
                                                                     <input type="hidden" name="action" value="delete">
                                                                     <input type="hidden" name="comment_id" value="<?php echo $comment['comment_id']; ?>">
+                                                                    <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? 'dashboard.php'); ?>">
                                                                     <button type="button" class="btn btn-light btn-sm rounded-pill" data-bs-dismiss="modal">Cancel</button>
                                                                     <button type="submit" class="btn btn-danger btn-sm rounded-pill fw-bold">Delete</button>
                                                                 </form>
@@ -289,6 +309,7 @@ $posts_result = $stmt->get_result();
                             <form action="../Context/post_action.php" method="POST">
                                 <div class="modal-body">
                                     <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
+                                    <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '../Pages/dashboard.php'); ?>">
                                     <textarea name="post_txt" class="form-control border bg-light rounded-3 p-3" rows="3" style="resize: none;" required><?php echo htmlspecialchars($post['post_txt']); ?></textarea>
                                 </div>
                                 <div class="modal-footer border-0 pt-0">
@@ -314,6 +335,7 @@ $posts_result = $stmt->get_result();
                             <div class="modal-footer border-0 pt-0">
                                 <form action="../Context/post_action.php" method="POST">
                                     <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
+                                    <input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '../Pages/dashboard.php'); ?>">
                                     <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
                                     <button type="submit" name="action" value="delete" class="btn btn-danger rounded-pill px-4 fw-bold">Delete</button>
                                 </form>
@@ -333,6 +355,19 @@ $posts_result = $stmt->get_result();
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.post-card').forEach(function (card) {
+        card.addEventListener('click', function (e) {
+            if (e.target.closest('a, button, form, input, textarea, select, .dropdown, .modal, .btn')) {
+                return;
+            }
+
+            const postId = card.getAttribute('data-post-id');
+            if (postId) {
+                window.location.href = 'post.php?id=' + postId;
+            }
+        });
+    });
+
     // Delegated click listener to initialize and open dropdowns cleanly
     document.addEventListener('click', function (e) {
         const toggleBtn = e.target.closest('[data-bs-toggle="dropdown"]');
